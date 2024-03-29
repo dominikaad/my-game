@@ -1,0 +1,18 @@
+import pygame
+from script import load_image
+wall1_image = pygame.image.load('image/blocks/Wall1.png').convert_alpha()
+wall2_image = pygame.image.load('image/blocks/Wall2.png').convert_alpha()
+wall3_image = pygame.image.load('image/blocks/Wall3.png').convert_alpha()
+wall4_image = pygame.image.load('image/blocks/Wall4.png').convert_alpha()
+lever_image = load_image('image/decorate/lever')
+chest_image = load_image('image/decorate/chest')
+bottle1_image = pygame.image.load('image/decorate/Bottle_1.png').convert_alpha()
+bottle2_image = pygame.image.load('image/decorate/Bottle_2.png').convert_alpha()
+wizard_image = load_image('image/wizard')
+player_image_idle = load_image('image/player/iddle')
+player_image_forward = load_image('image/player/forward')
+player_image_kill = load_image('image/player/kill')
+player_image_right = load_image('image/player/right')
+enemy_image_idle = load_image('image/enemy/iddle')
+enemy_image_kill = load_image('image/enemy/kill')
+enemy_image_right = load_image('image/enemy/right')
