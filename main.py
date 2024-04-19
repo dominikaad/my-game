@@ -21,15 +21,12 @@ from load import *
 
 def game_lvl():
     sc.fill('grey')
-
     floor_group.draw(sc)
     floor_group.update(0,0)
     topor_group.update()
     topor_group.draw(sc)
-    key_group.draw(sc)
-    key_group.update(0,0)
-    wizard_group.draw(sc)
-    wizard_group.update(0,0)
+
+
     enemy_group.draw(sc)
     enemy_group.update()
     mp_group.draw(sc)
@@ -48,11 +45,16 @@ def game_lvl():
     player_group.update()
     enemy_boss_group.draw(sc)
     enemy_boss_group.update(0,0)
+    wizard_group.draw(sc)
+    wizard_group.update(0,0)
+    key_group.draw(sc)
+    key_group.update(0,0)
     text_render = font.render('SCORE:' + str(player.score), True, 'black')
     sc.blit(text_render, (10, 10))
     text_render = q.render('LEVEL:' + str(lvl_game), True, 'black')
     sc.blit(text_render, (400, 10))
-    sc.blit(fog_image,(player.rect.center[0] - 2060, player.rect.center[1] - 2060))
+    if lvl_game == 3:
+        sc.blit(fog_image,(player.rect.center[0] - 2060, player.rect.center[1] - 2060))
     pygame.display.update()
 def drawMaps(nameFile):
     maps = []
@@ -174,20 +176,17 @@ class Chest(pygame.sprite.Sprite):
         self.rect.y = pos[1]
         self.frame = 0
         self.timer_anime = 0
-        self.anime = True
+        self.anime = False
         self.speedx = 0
         self.speedy = 0
-
+        self.score_key = 0
     def update(self, stepx, stepy):
-        global key_group
-        key_group = pygame.sprite.Group()
         self.image = self.image_list[self.frame]
         self.rect.x += stepx
         self.rect.y += stepy
+        self.animation()
         if pygame.sprite.spritecollide(self, player_group, False):
-            self.animation()
-            key = Key(key_image, (100,20))
-            key_group.add(key)
+            self.anime = True
 
     def camera_move(self, stepx, stepy):
         self.rect.x += stepx + self.speedx
@@ -198,6 +197,10 @@ class Chest(pygame.sprite.Sprite):
             if self.timer_anime / FPS > 0.2:
                 if self.frame == len(self.image_list) - 1:
                     self.frame = 0
+                    player.keys += 1
+                    key = Key(key_image, (player.keys*40,40))
+                    key_group.add(key)
+                    self.kill()
                 else:
                     self.frame += 1
                 self.timer_anime = 0
@@ -256,7 +259,6 @@ class Key(pygame.sprite.Sprite):
 
     def update(self, stepx, stepy):
         self.animation()
-        print(45)
         self.rect.x += stepx
         self.rect.y += stepy
     def camera_move(self, stepx, stepy):
@@ -265,6 +267,7 @@ class Key(pygame.sprite.Sprite):
 
     def animation(self):
         if self.anime:
+            self.image = self.image_list[self.frame]
             self.timer_anime += 1
             if self.timer_anime / FPS > 0.2:
                 if self.frame == len(self.image_list) - 1:
@@ -343,10 +346,33 @@ class Door(pygame.sprite.Sprite):
         # self.anime = True
         self.speedx = 0
         self.speedy = 0
-
+        self.open = False
     def update(self, stepx, stepy):
         self.rect.x += stepx
         self.rect.y += stepy
+        self.collide()
+    def collide(self):
+
+        if pygame.sprite.spritecollide(self, player_group, False) and self.open == False and player.keys>0:
+            self.open = True
+            player.keys -= 1
+            for i in key_group:
+                pass
+            else:
+                i.kill()
+        if self.open == False:
+            if pygame.sprite.spritecollide(self, player_group, False):
+                if player.dir == 'left':
+                    player.rect.left = self.rect.right
+                elif player.dir == 'right':
+                    player.rect.right = self.rect.left
+                elif player.dir == 'up':
+                    player.rect.top = self.rect.bottom
+                elif player.dir == 'bottom':
+                    player.rect.bottom = self.rect.top
+        # else:
+        #     player.keys -= 1
+        #
     def camera_move(self, stepx, stepy):
         self.rect.x += stepx + self.speedx
         self.rect.y += stepy + self.speedy
@@ -379,13 +405,16 @@ class Enemy(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
         self.mask_outline = self.mask.outline()
         self.mask_list = []
+        self.timer_trigger = 0
     def update(self):
-        d = ((self.rect.center[0] - player.rect.center[0]) ** 2
-             + (self.rect.center[1] - player.rect.center[1])** 2) ** (1/2)
-        self.animation()
-        self.maska_k()
-        self.collide()
-
+        if 0<self.rect.centerx<WIDTH and 0 <self.rect.centery<HEIGHT:
+            d = ((self.rect.center[0] - player.rect.center[0]) ** 2
+                 + (self.rect.center[1] - player.rect.center[1])** 2) ** (1/2)
+            self.animation()
+            self.maska_k()
+            self.collide()
+        else:
+            d = 0
         self.timer_move += 1
         if self.move and self.timer_move / FPS > 1.2:
             if random.randint(1, 4) == 1:
@@ -426,6 +455,7 @@ class Enemy(pygame.sprite.Sprite):
         if pygame.sprite.spritecollide(self, wall_group, False) or pygame.sprite.spritecollide(self, door_group,
                                                                                                 False) or pygame.sprite.spritecollide(
                 self, chest_group, False):
+            self.trigger = False
             self.timer_move = 0
             if self.dir == 'top':
                 self.dir = 'bottom'
@@ -435,8 +465,13 @@ class Enemy(pygame.sprite.Sprite):
                 self.dir = 'left'
             elif self.dir == 'left':
                 self.dir = 'right'
-        if d < 230:
+        if not self.trigger:
+            self.timer_trigger += 1
+        if d < 230 and self.timer_trigger/FPS>1:
+            self.timer_trigger = 0
             self.trigger = True
+        else:
+            self.trigger= False
         if self.trigger:
             pos_player = player.rect.center
             pos = self.rect.center
@@ -514,12 +549,13 @@ class Enemy(pygame.sprite.Sprite):
         self.mask_list = []
         for i in self.mask_outline:
             self.mask_list.append((i[0] + self.rect.x, i[1] + self.rect.y))
-        for point in self.mask_list:
-            x = point[0]
-            y = point[1]
-            # pygame.draw.circle(sc, 'red', (x, y), 1)
-
+        #for point in self.mask_list:
+        #    x = point[0]
+        #    y = point[1]
+        #    # pygame.draw.circle(sc, 'red', (x, y), 1)
+#
     def collide(self):
+
         if pygame.sprite.spritecollide(self, topor_group, False):
             self.anime_kill = True
             self.anime_idle = False
@@ -602,6 +638,8 @@ class Wizard(pygame.sprite.Sprite):
         if pygame.sprite.spritecollide(self, player_group, False):
             if lvl_game == 1:
                 sc.blit(goal_1_image, (340, 340))
+            elif lvl_game == 2:
+                sc.blit(goal_2_image, (340, 340))
 
     def animation(self):
         if self.anime:
@@ -672,6 +710,7 @@ class Player (pygame.sprite.Sprite):
         self.hp_bar = 'blue'
         self.key = pygame.key.get_pressed()
         self.add_topor()
+        self.keys = 0
 
     def move(self):
         if self.key[pygame.K_d]:
@@ -795,11 +834,16 @@ class Player (pygame.sprite.Sprite):
             self.hp -= 0.1
     def next_level(self):
         global lvl_game
-        if self.score > 2739 and pygame.sprite.spritecollide(self, wizard_group, False):
+        if lvl_game == 1 and self.score > 2739 and pygame.sprite.spritecollide(self, wizard_group, False):
             lvl_game += 1
             restart()
             drawMaps(str(lvl_game) + '_0.txt')
             drawMaps(str(lvl_game)+ '.txt')
+        if lvl_game == 2 and len(enemy_boss_group) == 0:
+            lvl_game += 1
+            restart()
+            drawMaps('2_0.txt')
+            drawMaps('2.txt')
 
     def add_topor(self):
         global topor_group
@@ -837,26 +881,35 @@ class Button (pygame.sprite.Sprite):
         self.time = 0
         self.frame = 0
         self.timer_anime = 0
-        self.anime = True
+        self.anime = False
     def update(self):
         self.time += 1
         global lvl
         click = pygame.mouse.get_pos()
+        self.animation()
         if pygame.mouse.get_pressed()[0]:
             if self.rect.left <click[0] < self.rect.right and self.rect.top < click[1] < self.rect.bottom:
-                self.animation()
-                if self.time / FPS > 0.2:
+                self.anime = True
+
+
+
+    def animation(self):
+        global lvl
+        if self.anime:
+            self.image = self.image_list[self.frame]
+            print(self.frame)
+            self.timer_anime += 1
+            if self.timer_anime / FPS > 0.2:
+                if self.frame == len(self.image_list) - 1:
+                    self.frame = 0
                     lvl = self.next_lvl
                     if lvl == 'game':
                         restart()
                         drawMaps('1_0.txt')
                         drawMaps('1.txt')
-    def animation(self):
-        if self.anime:
-            self.timer_anime += 1
-            if self.timer_anime / FPS > 0.2:
-                if self.frame == len(self.image_list) - 1:
-                    self.frame = 0
+                    elif lvl == 'end':
+                        pygame.quit()
+                        sys.exit()
                 else:
                     self.frame += 1
                 self.timer_anime = 0
