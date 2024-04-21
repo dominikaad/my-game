@@ -10,7 +10,7 @@ WIDTH = 1000
 HEIGHT = 800
 FPS = 60
 black = (55,55,55)
-lvl_game = 1
+lvl_game = 3
 lvl = 'menu'
 font = pygame.font.SysFont('Aria', 30)
 s = pygame.font.SysFont('Aria', 120)
@@ -48,11 +48,14 @@ def game_lvl():
         sc.blit(fog_image,(player.rect.center[0] - 2060, player.rect.center[1] - 2060))
         text_renders = font.render('Amount enemy:' + str(len(enemy_group)), True, 'white')
         sc.blit(text_renders, (800, 10))
+    if lvl_game == 2:
+        text_renders = font.render('Amount boss:' + str(len(enemy_boss_group)), True, 'white')
+        sc.blit(text_renders, (800, 10))
     player_group.draw(sc)
     player_group.update()
     key_group.draw(sc)
     key_group.update(0,0)
-    text_render = font.render('SCORE:' + str(player.score), True, 'white')
+    text_render = font.render('AMOUNT COINS:' + str(len(coin_group)), True, 'white')
     sc.blit(text_render, (10, 10))
     text_render = q.render('LEVEL:' + str(lvl_game), True, 'white')
     sc.blit(text_render, (400, 10))
@@ -279,6 +282,7 @@ class Chest(pygame.sprite.Sprite):
                     player.keys += 1
                     key = Key(key_image, (player.keys*40,40))
                     key_group.add(key)
+                    key_sound.play()
                     self.kill()
                 else:
                     self.frame += 1
@@ -305,6 +309,7 @@ class Coin(pygame.sprite.Sprite):
         self.rect.y += stepy
         if pygame.sprite.spritecollide(self, player_group, False):
             player.score += 10
+            coin_sound.play()
             # all_score += player.score
             self.kill()
 
@@ -419,6 +424,7 @@ class Enemy_boss(pygame.sprite.Sprite):
             self.kill()
     def life(self):
         if pygame.sprite.spritecollide(self, topor_group, False):
+            enemy_sound.play()
             self.hp -= 1
 
     def camera_move(self, stepx, stepy):
@@ -496,6 +502,7 @@ class Enemy(pygame.sprite.Sprite):
         self.mask_outline = self.mask.outline()
         self.mask_list = []
         self.timer_trigger = 0
+        self.text = False
     def update(self):
         if 0<self.rect.centerx<WIDTH and 0 <self.rect.centery<HEIGHT:
             d = ((self.rect.center[0] - player.rect.center[0]) ** 2
@@ -647,6 +654,7 @@ class Enemy(pygame.sprite.Sprite):
     def collide(self):
 
         if pygame.sprite.spritecollide(self, topor_group, False):
+            enemy_sound.play()
             self.anime_kill = True
             self.anime_idle = False
             self.anime_right = False
@@ -794,47 +802,51 @@ class Player (pygame.sprite.Sprite):
         self.add_topor()
         self.keys = 0
         self.time = 0
+        self.text = False
+        self.winner = False
+        self.go = True
 
     def move(self):
-        if self.key[pygame.K_d]:
-            self.rect.x += 7
-            self.anime_idle = False
-            self.anime_right = True
-            self.anime_left =False
-            self.dir = 'right'
-            if self.rect.right > 800:
-                self.rect.right = 800
-                camera_group.camera_move(-self.speed, 0)
-        elif self.key[pygame.K_a]:
-            self.rect.x -= 7
-            self.anime_idle = False
-            self.anime_left = True
-            self.anime_right= False
-            self.dir = 'left'
-            if self.rect.left < 200:
-                self.rect.left = 200
-                camera_group.camera_move(self.speed, 0)
-        elif self.key[pygame.K_w]:
-            self.rect.y -= 7
-            self.anime_idle = False
-            self.anime_up = True
-            self.anime_forward = False
-            self.dir = 'up'
-            if self.rect.top < 200:
-                self.rect.top = 200
-                camera_group.camera_move(0, self.speed)
-        elif self.key[pygame.K_s]:
-            self.rect.y += 7
-            self.anime_idle = False
-            self.anime_forward = True
-            self.anime_up = False
-            self.dir = 'bottom'
-            if self.rect.top > 600:
-                self.rect.top = 600
-                camera_group.camera_move(0, -self.speed)
-        else:
-            self.anime_right = False
-            self.anime_idle = True
+        if self.go:
+            if self.key[pygame.K_d]:
+                self.rect.x += 7
+                self.anime_idle = False
+                self.anime_right = True
+                self.anime_left =False
+                self.dir = 'right'
+                if self.rect.right > 800:
+                    self.rect.right = 800
+                    camera_group.camera_move(-self.speed, 0)
+            elif self.key[pygame.K_a]:
+                self.rect.x -= 7
+                self.anime_idle = False
+                self.anime_left = True
+                self.anime_right= False
+                self.dir = 'left'
+                if self.rect.left < 200:
+                    self.rect.left = 200
+                    camera_group.camera_move(self.speed, 0)
+            elif self.key[pygame.K_w]:
+                self.rect.y -= 7
+                self.anime_idle = False
+                self.anime_up = True
+                self.anime_forward = False
+                self.dir = 'up'
+                if self.rect.top < 200:
+                    self.rect.top = 200
+                    camera_group.camera_move(0, self.speed)
+            elif self.key[pygame.K_s]:
+                self.rect.y += 7
+                self.anime_idle = False
+                self.anime_forward = True
+                self.anime_up = False
+                self.dir = 'bottom'
+                if self.rect.top > 600:
+                    self.rect.top = 600
+                    camera_group.camera_move(0, -self.speed)
+            else:
+                self.anime_right = False
+                self.anime_idle = True
 
     def animation(self):
         self.timer_anime += 2
@@ -909,28 +921,41 @@ class Player (pygame.sprite.Sprite):
         # pygame.draw.rect(sc, 'black', (self.rect.x - 30, self.rect.y - 30, 100, 10), 2)
         # pygame.draw.rect(sc, 'blue', (self.rect.x - 27, self.rect.y - 27, width_mp, 6))
         if self.hp<1:
-            pygame.quit()
-            sys.exit()
+            game_over_sound.play()
+            self.go = False
+            self.text = True
+            self.speed = 0
+
+    def fail(self):
+        if self.text:
+            text_2 = s.render('YOU LOSE!', True, 'white')
+            sc.blit(text_2, (300, 350))
+        if self.winner:
+            text_1 = s.render('YOU WINNER!', True, 'white')
+            sc.blit(text_1, (300, 350))
 
     def life(self):
         if pygame.sprite.spritecollide(self, enemy_group, False):
+            life_sound.play()
             self.hp -= 0.5
     def next_level(self):
         global lvl_game, lvl
-        if lvl_game == 1 and self.score > 2739 and pygame.sprite.spritecollide(self, wizard_group, False) :
+        if lvl_game == 1 and self.score > 27 and pygame.sprite.spritecollide(self, wizard_group, False) :
             lvl_game += 1
+            level_sound.play()
             restart()
             drawMaps(str(lvl_game) + '_0.txt')
             drawMaps(str(lvl_game)+ '.txt')
-        if lvl_game == 2 and len(enemy_boss_group) == 0:
+        elif lvl_game == 2 and len(enemy_boss_group) == 0:
             lvl_game += 1
             restart()
             drawMaps('1_0.txt')
             drawMaps('1.txt')
-        if lvl==3 and len(enemy_group)==0:
-            self.time += 1
-            pygame.quit()
-            sys.exit()
+            level_sound.play()
+        elif lvl_game == 3 and len(enemy_group) == 0:
+            win_sound.play()
+            self.winner = True
+
 
 
 
@@ -955,6 +980,7 @@ class Player (pygame.sprite.Sprite):
             topor_group.add(topor)
     def update(self):
         self.maska_k()
+        self.fail()
         self.collide_wizard()
         self.key = pygame.key.get_pressed()
         self.move()
@@ -1013,6 +1039,7 @@ class Button (pygame.sprite.Sprite):
         self.animation()
         if pygame.mouse.get_pressed()[0]:
             if self.rect.left <click[0] < self.rect.right and self.rect.top < click[1] < self.rect.bottom:
+                button_sound.play()
                 self.anime = True
     # def add_enemy(self):
     #     global enemy_fon
