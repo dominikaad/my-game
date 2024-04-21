@@ -12,7 +12,6 @@ FPS = 60
 black = (55,55,55)
 lvl_game = 1
 lvl = 'menu'
-all_score = 0
 font = pygame.font.SysFont('Aria', 30)
 s = pygame.font.SysFont('Aria', 120)
 q = pygame.font.SysFont('Aria', 70)
@@ -22,42 +21,41 @@ clock = pygame.time.Clock()
 from load import *
 
 def game_lvl():
-    if not player.play == False:
-        sc.fill(black)
-        floor_group.draw(sc)
-        floor_group.update(0,0)
-        topor_group.update()
-        topor_group.draw(sc)
-        enemy_group.draw(sc)
-        enemy_group.update()
-        mp_group.draw(sc)
-        mp_group.update(0,0)
-        hp_group.draw(sc)
-        hp_group.update(0,0)
-        door_group.draw(sc)
-        door_group.update(0,0)
-        chest_group.draw(sc)
-        chest_group.update(0,0)
-        wall_group.draw(sc)
-        wall_group.update(0,0)
-        coin_group.draw(sc)
-        coin_group.update(0, 0)
-        wizard_group.draw(sc)
-        wizard_group.update(0, 0)
-        enemy_boss_group.draw(sc)
-        enemy_boss_group.update(0,0)
-        player_group.draw(sc)
-        player_group.update()
-        key_group.draw(sc)
-        key_group.update(0,0)
-        text_render = font.render('SCORE:' + str(player.score), True, 'white')
-        sc.blit(text_render, (10, 10))
-        text_render = q.render('LEVEL:' + str(lvl_game), True, 'white')
-        sc.blit(text_render, (400, 10))
+    sc.fill(black)
+    floor_group.draw(sc)
+    floor_group.update(0,0)
+    topor_group.update()
+    topor_group.draw(sc)
+    enemy_group.draw(sc)
+    enemy_group.update()
+    mp_group.draw(sc)
+    mp_group.update(0,0)
+    hp_group.draw(sc)
+    hp_group.update(0,0)
+    door_group.draw(sc)
+    door_group.update(0,0)
+    chest_group.draw(sc)
+    chest_group.update(0,0)
+    wall_group.draw(sc)
+    wall_group.update(0,0)
+    coin_group.draw(sc)
+    coin_group.update(0, 0)
+    enemy_boss_group.draw(sc)
+    enemy_boss_group.update(0,0)
+    wizard_group.draw(sc)
+    wizard_group.update(0, 0)
     if lvl_game == 3:
         sc.blit(fog_image,(player.rect.center[0] - 2060, player.rect.center[1] - 2060))
         text_renders = font.render('Amount enemy:' + str(len(enemy_group)), True, 'white')
         sc.blit(text_renders, (800, 10))
+    player_group.draw(sc)
+    player_group.update()
+    key_group.draw(sc)
+    key_group.update(0,0)
+    text_render = font.render('SCORE:' + str(player.score), True, 'white')
+    sc.blit(text_render, (10, 10))
+    text_render = q.render('LEVEL:' + str(lvl_game), True, 'white')
+    sc.blit(text_render, (400, 10))
     pygame.display.update()
 def drawMaps(nameFile):
     maps = []
@@ -123,9 +121,6 @@ def drawMaps(nameFile):
                 enemy_boss = Enemy_boss(slime_big1_image, pos)
                 enemy_boss_group.add(enemy_boss)
                 camera_group.add(enemy_boss)
-
-
-
 
 class Wall (pygame.sprite.Sprite):
     def __init__(self,image, pos):
@@ -218,6 +213,8 @@ class Player_fon(pygame.sprite.Sprite):
         self.rect.x -= self.speed
         self.image = self.image_list[self.frame]
         self.animation()
+        if self.rect.right < -50:
+            self.kill()
     def add_topor(self):
         global topor_fon_group
         topor_fon_group = pygame.sprite.Group()
@@ -502,7 +499,7 @@ class Enemy(pygame.sprite.Sprite):
     def update(self):
         if 0<self.rect.centerx<WIDTH and 0 <self.rect.centery<HEIGHT:
             d = ((self.rect.center[0] - player.rect.center[0]) ** 2
-                 + (self.rect.center[1] - player.rect.center[1])** 2) ** (1/2)
+                     + (self.rect.center[1] - player.rect.center[1])** 2) ** (1/2)
             self.animation()
             self.maska_k()
             self.collide()
@@ -560,7 +557,7 @@ class Enemy(pygame.sprite.Sprite):
                 self.dir = 'right'
         if not self.trigger:
             self.timer_trigger += 1
-        if d < 230 and self.timer_trigger/FPS>1 and 0<self.rect.centerx<WIDTH and 0 <self.rect.centery<HEIGHT:
+        if d < 230 and self.timer_trigger/FPS>1 and 0<self.rect.centerx<WIDTH and 0<self.rect.centery<HEIGHT:
             self.timer_trigger = 0
             self.trigger = True
         else:
@@ -796,7 +793,7 @@ class Player (pygame.sprite.Sprite):
         self.key = pygame.key.get_pressed()
         self.add_topor()
         self.keys = 0
-        self.play = True
+        self.time = 0
 
     def move(self):
         if self.key[pygame.K_d]:
@@ -903,6 +900,7 @@ class Player (pygame.sprite.Sprite):
             # pygame.draw.circle(sc, 'blue', (x, y), 1)
 
     def draw_stats(self):
+
         width_hp = 96 * (self.hp/100)
         # width_mp = 96 * (self.mp / 100)
         pygame.draw.rect(sc,'black', (self.rect.x - 30, self.rect.y - 52, 100,20), 2)
@@ -911,29 +909,34 @@ class Player (pygame.sprite.Sprite):
         # pygame.draw.rect(sc, 'black', (self.rect.x - 30, self.rect.y - 30, 100, 10), 2)
         # pygame.draw.rect(sc, 'blue', (self.rect.x - 27, self.rect.y - 27, width_mp, 6))
         if self.hp<1:
-            self.play = False
-            # restart()
-            failMenu()
+            pygame.quit()
+            sys.exit()
 
     def life(self):
         if pygame.sprite.spritecollide(self, enemy_group, False):
             self.hp -= 0.5
     def next_level(self):
-        global lvl_game
-        if lvl_game == 1 and self.score > 2739 and pygame.sprite.spritecollide(self, wizard_group, False) and self.play:
+        global lvl_game, lvl
+        if lvl_game == 1 and self.score > 2739 and pygame.sprite.spritecollide(self, wizard_group, False) :
             lvl_game += 1
             restart()
             drawMaps(str(lvl_game) + '_0.txt')
             drawMaps(str(lvl_game)+ '.txt')
-        if lvl_game == 2 and len(enemy_boss_group) == 0 and self.play:
+        if lvl_game == 2 and len(enemy_boss_group) == 0:
             lvl_game += 1
             restart()
-            drawMaps('2_0.txt')
-            drawMaps('2.txt')
-        if lvl_game == 3 and len(enemy_group) == 0 and self.play:
-            restart()
-            finishMenu()
+            drawMaps('1_0.txt')
+            drawMaps('1.txt')
+        if lvl==3 and len(enemy_group)==0:
+            self.time += 1
+            pygame.quit()
+            sys.exit()
 
+
+
+        # if lvl_game == 3 and len(enemy_group) == 0:
+        #     pygame.quit()
+        #     sys.exit()
 
     def collide_wizard(self):
         if pygame.sprite.spritecollide(self, wizard_group, False):
@@ -977,32 +980,16 @@ def startMenu():
     pygame.display.update()
 def finishMenu():
     sc.fill(black)
-    # button_group.draw(sc)
-    # button_group.update()
-    # enemy_fon_group.draw(sc)
-    # enemy_fon_group.update(0,0)
-    # topor_fon_group.draw(sc)
-    # topor_fon_group.update()
-    # player_fon_group.draw(sc)
-    # player_fon_group.update(0,0)
     text_rend = s.render('YOU WON', True, 'white')
     sc.blit(text_rend, (250, 300))
     pygame.display.update()
 def failMenu():
     sc.fill(black)
-    # button_group.update()
-    # button_group.draw(sc)
-    # enemy_fon_group.draw(sc)
-    # enemy_fon_group.update(0,0)
-    # topor_fon_group.draw(sc)
-    # topor_fon_group.update()
-    # player_fon_group.draw(sc)
-    # player_fon_group.update(0,0)
     text_rend = s.render('YOU LOSE!', True, 'white')
     sc.blit(text_rend, (250, 300))
     pygame.display.update()
 class Button (pygame.sprite.Sprite):
-    def __init__(self, image, pos, next_lvl, text):
+    def __init__(self, image, pos, next_lvl, text, create=False):
         pygame.sprite.Sprite.__init__(self)
         self.image_list = image
         self.image = self.image_list[0]
@@ -1015,9 +1002,11 @@ class Button (pygame.sprite.Sprite):
         self.anime = False
         self.timer_spawn = 0
         self.timer_spawner = 0
+        self.create = create
     def update(self):
-        self.add_enemy()
-        self.add_player()
+        if self.create:
+            # self.add_enemy()
+            self.add_player()
         self.time += 1
         global lvl
         click = pygame.mouse.get_pos()
@@ -1025,19 +1014,22 @@ class Button (pygame.sprite.Sprite):
         if pygame.mouse.get_pressed()[0]:
             if self.rect.left <click[0] < self.rect.right and self.rect.top < click[1] < self.rect.bottom:
                 self.anime = True
-    def add_enemy(self):
-        global enemy_fon
-        self.timer_spawn += 1
-        if self.timer_spawn / FPS > 2:
-            enemy_fon = Enemy_fon(slime_fon_image)
-            enemy_fon_group.add(enemy_fon)
-            self.timer_spawn = 0
+    # def add_enemy(self):
+    #     global enemy_fon
+    #     self.timer_spawn += 1
+    #     if self.timer_spawn / FPS > 2:
+    #         enemy_fon = Enemy_fon(slime_fon_image)
+    #         enemy_fon_group.add(enemy_fon)
+    #         self.timer_spawn = 0
     def add_player(self):
         global player_fon
         self.timer_spawner += 1
-        if self.timer_spawner / FPS > 2:
+        if self.timer_spawner / FPS > 1 and len(player_fon_group) == 0:
             player_fon = Player_fon(player_fon_image)
             player_fon_group.add(player_fon)
+            enemy_fon = Enemy_fon(slime_fon_image)
+            enemy_fon.rect.x -=50
+            enemy_fon_group.add(enemy_fon)
             self.timer_spawner = 0
 
     def animation(self):
@@ -1085,14 +1077,10 @@ button_group = pygame.sprite.Group()
 player_fon_group = pygame.sprite.Group()
 topor_fon_group = pygame.sprite.Group()
 enemy_fon_group = pygame.sprite.Group()
-button_start = Button(button_play_image, (600,550), 'game', 'start')
+button_start = Button(button_play_image, (600,550), 'game', 'start', True)
 button_group.add(button_start)
 button_exit = Button(button_exit_image, (200,550), 'end', 'exit')
 button_group.add(button_exit)
-enemy_fon = Enemy_fon(slime_fon_image)
-enemy_fon_group.add(enemy_fon)
-player_fon = Player_fon(player_fon_image)
-player_fon_group.add(player_fon)
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -1100,7 +1088,7 @@ while True:
             sys.exit()
     if lvl == 'game':
         game_lvl()
-    elif lvl == 'menu':
+    elif lvl == 'menu' :
         startMenu()
     # elif player.play == False:
     #     failMenu()
