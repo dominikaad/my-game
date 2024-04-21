@@ -9,52 +9,55 @@ os.chdir(current_path)
 WIDTH = 1000
 HEIGHT = 800
 FPS = 60
+black = (55,55,55)
 lvl_game = 1
 lvl = 'menu'
 all_score = 0
 font = pygame.font.SysFont('Aria', 30)
 s = pygame.font.SysFont('Aria', 120)
 q = pygame.font.SysFont('Aria', 70)
+w = pygame.font.SysFont('Aria', 150)
 sc = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 from load import *
 
 def game_lvl():
-    sc.fill('grey')
-    floor_group.draw(sc)
-    floor_group.update(0,0)
-    topor_group.update()
-    topor_group.draw(sc)
-
-
-    enemy_group.draw(sc)
-    enemy_group.update()
-    mp_group.draw(sc)
-    mp_group.update(0,0)
-    hp_group.draw(sc)
-    hp_group.update(0,0)
-    door_group.draw(sc)
-    door_group.update(0,0)
-    chest_group.draw(sc)
-    chest_group.update(0,0)
-    wall_group.draw(sc)
-    wall_group.update(0,0)
-    coin_group.draw(sc)
-    coin_group.update(0, 0)
-    player_group.draw(sc)
-    player_group.update()
-    enemy_boss_group.draw(sc)
-    enemy_boss_group.update(0,0)
-    wizard_group.draw(sc)
-    wizard_group.update(0,0)
-    key_group.draw(sc)
-    key_group.update(0,0)
-    text_render = font.render('SCORE:' + str(player.score), True, 'black')
-    sc.blit(text_render, (10, 10))
-    text_render = q.render('LEVEL:' + str(lvl_game), True, 'black')
-    sc.blit(text_render, (400, 10))
+    if not player.play == False:
+        sc.fill(black)
+        floor_group.draw(sc)
+        floor_group.update(0,0)
+        topor_group.update()
+        topor_group.draw(sc)
+        enemy_group.draw(sc)
+        enemy_group.update()
+        mp_group.draw(sc)
+        mp_group.update(0,0)
+        hp_group.draw(sc)
+        hp_group.update(0,0)
+        door_group.draw(sc)
+        door_group.update(0,0)
+        chest_group.draw(sc)
+        chest_group.update(0,0)
+        wall_group.draw(sc)
+        wall_group.update(0,0)
+        coin_group.draw(sc)
+        coin_group.update(0, 0)
+        wizard_group.draw(sc)
+        wizard_group.update(0, 0)
+        enemy_boss_group.draw(sc)
+        enemy_boss_group.update(0,0)
+        player_group.draw(sc)
+        player_group.update()
+        key_group.draw(sc)
+        key_group.update(0,0)
+        text_render = font.render('SCORE:' + str(player.score), True, 'white')
+        sc.blit(text_render, (10, 10))
+        text_render = q.render('LEVEL:' + str(lvl_game), True, 'white')
+        sc.blit(text_render, (400, 10))
     if lvl_game == 3:
         sc.blit(fog_image,(player.rect.center[0] - 2060, player.rect.center[1] - 2060))
+        text_renders = font.render('Amount enemy:' + str(len(enemy_group)), True, 'white')
+        sc.blit(text_renders, (800, 10))
     pygame.display.update()
 def drawMaps(nameFile):
     maps = []
@@ -151,6 +154,85 @@ class Wall (pygame.sprite.Sprite):
     def camera_move(self, stepx, stepy):
         self.rect.x += stepx + self.speedx
         self.rect.y += stepy + self.speedy
+class Enemy_fon(pygame.sprite.Sprite):
+    def __init__(self, image):
+        pygame.sprite.Sprite.__init__(self)
+        self.image_list = image
+        self.image = self.image_list[0]
+        self.rect = self.image.get_rect()
+        self.frame = 0
+        self.timer_anime = 0
+        self.anime = True
+        self.rect.x = WIDTH + 100
+        self.rect.bottom = HEIGHT - 400
+        self.speed = 7
+    def update(self, stepx, stepy):
+        self.rect.x -= self.speed
+        self.image = self.image_list[self.frame]
+        self.animation()
+
+    def animation(self):
+        if self.anime:
+            self.timer_anime += 1
+            if self.timer_anime / FPS > 0.15:
+                if self.frame == len(self.image_list) - 1:
+                    self.frame = 0
+                else:
+                    self.frame += 1
+                self.timer_anime = 0
+class Topor_fon(pygame.sprite.Sprite):
+    def __init__(self, image, pos, start_deg):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.centerx = pos[0]
+        self.rect.centery = pos[1]
+        self.deg_rotate = 0
+        self.deg = start_deg
+        self.timer_attack = 0
+    def update(self):
+        self.rotate()
+        self.move()
+    def rotate(self):
+        self.deg_rotate -= 20
+        self.image = pygame.transform.rotate(topor_image, self.deg_rotate)
+    def move(self):
+        self.deg += 3
+        self.rect.centerx = 100 * cos(radians(self.deg)) + player_fon.rect.centerx
+        self.rect.centery = 100 * sin(radians(self.deg)) + player_fon.rect.centery
+class Player_fon(pygame.sprite.Sprite):
+    def __init__(self, image):
+        pygame.sprite.Sprite.__init__(self)
+        self.image_list = image
+        self.image = self.image_list[0]
+        self.rect = self.image.get_rect()
+        self.frame = 0
+        self.timer_anime = 0
+        self.anime = True
+        self.rect.x = WIDTH + 500
+        self.rect.y = 300
+        self.speed = 7
+        self.topor_f = 1
+        self.add_topor()
+    def update(self, stepx, stepy):
+        self.rect.x -= self.speed
+        self.image = self.image_list[self.frame]
+        self.animation()
+    def add_topor(self):
+        global topor_fon_group
+        topor_fon_group = pygame.sprite.Group()
+        for i in range(self.topor_f):
+            topor_fon = Topor_fon(topor_image, (self.rect.centerx + 20, self.rect.centery + 20), (360 // self.topor_f * i))
+            topor_fon_group.add(topor_fon)
+    def animation(self):
+        if self.anime:
+            self.timer_anime += 1
+            if self.timer_anime / FPS > 0.15:
+                if self.frame == len(self.image_list) - 1:
+                    self.frame = 0
+                else:
+                    self.frame += 1
+                self.timer_anime = 0
 class Floor (pygame.sprite.Sprite):
     def __init__(self,image, pos):
         pygame.sprite.Sprite.__init__(self)
@@ -284,6 +366,7 @@ class Enemy_boss(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = pos[0]
         self.rect.y = pos[1]
+        self.trigger = False
         self.frame = 0
         self.timer_anime = 0
         self.anime = True
@@ -294,14 +377,24 @@ class Enemy_boss(pygame.sprite.Sprite):
 
     def update(self, stepx, stepy):
         self.image = self.image_list[self.frame]
-        self.animation()
-        self.draw_stats()
-        self.life()
-        self.rect.x += stepx
-        self.rect.y += stepy
-        if 0< self.rect.centerx < 1200 and 0 < self.rect.centery <800:
+        if 0<self.rect.centerx<WIDTH and 0 <self.rect.centery<HEIGHT:
+            d = ((self.rect.center[0] - player.rect.center[0]) ** 2
+                 + (self.rect.center[1] - player.rect.center[1])** 2) ** (1/2)
+            self.animation()
+            self.draw_stats()
+            self.life()
+            self.rect.x += stepx
+            self.rect.y += stepy
+        else:
+            d = 0
+        if not self.trigger:
             self.timer += 1
-        if self.timer / FPS > 2:
+        if d < 230 and self.timer/FPS>1 and 0<self.rect.centerx<WIDTH and 0 <self.rect.centery<HEIGHT:
+            self.timer = 0
+            self.trigger = True
+        else:
+            self.trigger= False
+        if self.trigger:
             enemy = Enemy({'idle': enemy_image_idle, 'kill': enemy_image_kill, 'right': enemy_image_right,
                            'left': enemy_image_left}, self.rect.center)
             enemy_group.add(enemy)
@@ -416,7 +509,7 @@ class Enemy(pygame.sprite.Sprite):
         else:
             d = 0
         self.timer_move += 1
-        if self.move and self.timer_move / FPS > 1.2:
+        if self.move and self.timer_move / FPS > 1.5:
             if random.randint(1, 4) == 1:
                 self.dir = 'top'
             if random.randint(1, 4) == 2:
@@ -467,7 +560,7 @@ class Enemy(pygame.sprite.Sprite):
                 self.dir = 'right'
         if not self.trigger:
             self.timer_trigger += 1
-        if d < 230 and self.timer_trigger/FPS>1:
+        if d < 230 and self.timer_trigger/FPS>1 and 0<self.rect.centerx<WIDTH and 0 <self.rect.centery<HEIGHT:
             self.timer_trigger = 0
             self.trigger = True
         else:
@@ -630,16 +723,8 @@ class Wizard(pygame.sprite.Sprite):
     def update(self, stepx, stepy):
         self.image = self.image_list[self.frame]
         self.animation()
-        self.collide()
         self.rect.x += stepx
         self.rect.y += stepy
-
-    def collide(self):
-        if pygame.sprite.spritecollide(self, player_group, False):
-            if lvl_game == 1:
-                sc.blit(goal_1_image, (340, 340))
-            elif lvl_game == 2:
-                sc.blit(goal_2_image, (340, 340))
 
     def animation(self):
         if self.anime:
@@ -711,6 +796,7 @@ class Player (pygame.sprite.Sprite):
         self.key = pygame.key.get_pressed()
         self.add_topor()
         self.keys = 0
+        self.play = True
 
     def move(self):
         if self.key[pygame.K_d]:
@@ -825,25 +911,38 @@ class Player (pygame.sprite.Sprite):
         # pygame.draw.rect(sc, 'black', (self.rect.x - 30, self.rect.y - 30, 100, 10), 2)
         # pygame.draw.rect(sc, 'blue', (self.rect.x - 27, self.rect.y - 27, width_mp, 6))
         if self.hp<1:
-            self.kill()
-            pygame.quit()
-            sys.exit()
+            self.play = False
+            # restart()
+            failMenu()
 
     def life(self):
         if pygame.sprite.spritecollide(self, enemy_group, False):
-            self.hp -= 0.1
+            self.hp -= 0.5
     def next_level(self):
         global lvl_game
-        if lvl_game == 1 and self.score > 2739 and pygame.sprite.spritecollide(self, wizard_group, False):
+        if lvl_game == 1 and self.score > 2739 and pygame.sprite.spritecollide(self, wizard_group, False) and self.play:
             lvl_game += 1
             restart()
             drawMaps(str(lvl_game) + '_0.txt')
             drawMaps(str(lvl_game)+ '.txt')
-        if lvl_game == 2 and len(enemy_boss_group) == 0:
+        if lvl_game == 2 and len(enemy_boss_group) == 0 and self.play:
             lvl_game += 1
             restart()
             drawMaps('2_0.txt')
             drawMaps('2.txt')
+        if lvl_game == 3 and len(enemy_group) == 0 and self.play:
+            restart()
+            finishMenu()
+
+
+    def collide_wizard(self):
+        if pygame.sprite.spritecollide(self, wizard_group, False):
+            if lvl_game == 1:
+                sc.blit(goal_1_image, (340, 340))
+            elif lvl_game == 2:
+                sc.blit(goal_3_image, (340, 340))
+            elif lvl_game == 3:
+                sc.blit(goal_2_image, (340, 340))
 
     def add_topor(self):
         global topor_group
@@ -853,6 +952,7 @@ class Player (pygame.sprite.Sprite):
             topor_group.add(topor)
     def update(self):
         self.maska_k()
+        self.collide_wizard()
         self.key = pygame.key.get_pressed()
         self.move()
         self.animation()
@@ -860,15 +960,46 @@ class Player (pygame.sprite.Sprite):
         self.life()
         self.next_level()
 
-
 def startMenu():
-    sc.fill('grey')
+    sc.fill(black)
     button_group.draw(sc)
     button_group.update()
-    text_rend = s.render('WELCOME!', True, 'black')
+    enemy_fon_group.draw(sc)
+    enemy_fon_group.update(0,0)
+    topor_fon_group.draw(sc)
+    topor_fon_group.update()
+    player_fon_group.draw(sc)
+    player_fon_group.update(0,0)
+    text_rend = s.render('WELCOME!', True, 'white')
     sc.blit(text_rend, (250, 100))
     # text_render = font.render('SCORE:' + str(all_score), True, 'black')
     # sc.blit(text_render, (10, 10))
+    pygame.display.update()
+def finishMenu():
+    sc.fill(black)
+    # button_group.draw(sc)
+    # button_group.update()
+    # enemy_fon_group.draw(sc)
+    # enemy_fon_group.update(0,0)
+    # topor_fon_group.draw(sc)
+    # topor_fon_group.update()
+    # player_fon_group.draw(sc)
+    # player_fon_group.update(0,0)
+    text_rend = s.render('YOU WON', True, 'white')
+    sc.blit(text_rend, (250, 300))
+    pygame.display.update()
+def failMenu():
+    sc.fill(black)
+    # button_group.update()
+    # button_group.draw(sc)
+    # enemy_fon_group.draw(sc)
+    # enemy_fon_group.update(0,0)
+    # topor_fon_group.draw(sc)
+    # topor_fon_group.update()
+    # player_fon_group.draw(sc)
+    # player_fon_group.update(0,0)
+    text_rend = s.render('YOU LOSE!', True, 'white')
+    sc.blit(text_rend, (250, 300))
     pygame.display.update()
 class Button (pygame.sprite.Sprite):
     def __init__(self, image, pos, next_lvl, text):
@@ -882,7 +1013,11 @@ class Button (pygame.sprite.Sprite):
         self.frame = 0
         self.timer_anime = 0
         self.anime = False
+        self.timer_spawn = 0
+        self.timer_spawner = 0
     def update(self):
+        self.add_enemy()
+        self.add_player()
         self.time += 1
         global lvl
         click = pygame.mouse.get_pos()
@@ -890,14 +1025,26 @@ class Button (pygame.sprite.Sprite):
         if pygame.mouse.get_pressed()[0]:
             if self.rect.left <click[0] < self.rect.right and self.rect.top < click[1] < self.rect.bottom:
                 self.anime = True
-
-
+    def add_enemy(self):
+        global enemy_fon
+        self.timer_spawn += 1
+        if self.timer_spawn / FPS > 2:
+            enemy_fon = Enemy_fon(slime_fon_image)
+            enemy_fon_group.add(enemy_fon)
+            self.timer_spawn = 0
+    def add_player(self):
+        global player_fon
+        self.timer_spawner += 1
+        if self.timer_spawner / FPS > 2:
+            player_fon = Player_fon(player_fon_image)
+            player_fon_group.add(player_fon)
+            self.timer_spawner = 0
 
     def animation(self):
         global lvl
         if self.anime:
             self.image = self.image_list[self.frame]
-            print(self.frame)
+            # print(self.frame)
             self.timer_anime += 1
             if self.timer_anime / FPS > 0.2:
                 if self.frame == len(self.image_list) - 1:
@@ -914,10 +1061,8 @@ class Button (pygame.sprite.Sprite):
                     self.frame += 1
                 self.timer_anime = 0
 
-
-
 def restart():
-    global player_group,  wizard_group, enemy_group, mp_group, hp_group,enemy_boss_group,door_group,floor_group,button_group, chest_group, wall_group, camera_group, player, coin_group,key_group, topor_group
+    global player_group,  wizard_group,topor_fon_group, player_fon_group,enemy_group, mp_group, hp_group,enemy_boss_group,door_group,floor_group,button_group, chest_group, wall_group, camera_group, player, coin_group,key_group, topor_group, enemy_fon_group
     player_group = pygame.sprite.Group()
     topor_group = pygame.sprite.Group()
     wizard_group = pygame.sprite.Group()
@@ -937,10 +1082,17 @@ def restart():
     floor_group = pygame.sprite.Group()
 
 button_group = pygame.sprite.Group()
-button_start = Button(button_play_image, (600,500), 'game', 'start')
+player_fon_group = pygame.sprite.Group()
+topor_fon_group = pygame.sprite.Group()
+enemy_fon_group = pygame.sprite.Group()
+button_start = Button(button_play_image, (600,550), 'game', 'start')
 button_group.add(button_start)
-button_exit = Button(button_exit_image, (200,500), 'end', 'exit')
+button_exit = Button(button_exit_image, (200,550), 'end', 'exit')
 button_group.add(button_exit)
+enemy_fon = Enemy_fon(slime_fon_image)
+enemy_fon_group.add(enemy_fon)
+player_fon = Player_fon(player_fon_image)
+player_fon_group.add(player_fon)
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -950,6 +1102,8 @@ while True:
         game_lvl()
     elif lvl == 'menu':
         startMenu()
+    # elif player.play == False:
+    #     failMenu()
     elif lvl == 'exit':
         pygame.quit()
         sys.exit()

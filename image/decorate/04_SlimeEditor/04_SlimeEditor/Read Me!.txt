@@ -1,0 +1,8 @@
+Here you will find two aseprite files:
+-1_ bodyAssets
+-2_ editorAssets
+
+
+The first is where you can find all the parts of the body, completely free to be modified if you want.
+
+In the second, a simple background and also the buttons.
