@@ -10,8 +10,8 @@ WIDTH = 1000
 HEIGHT = 800
 FPS = 60
 black = (55,55,55)
-lvl_game = 3
-lvl = 'menu'
+lvl_game = 1
+all_score = 0
 font = pygame.font.SysFont('Aria', 30)
 s = pygame.font.SysFont('Aria', 120)
 q = pygame.font.SysFont('Aria', 70)
@@ -55,8 +55,12 @@ def game_lvl():
     player_group.update()
     key_group.draw(sc)
     key_group.update(0,0)
-    text_render = font.render('AMOUNT COINS:' + str(len(coin_group)), True, 'white')
-    sc.blit(text_render, (10, 10))
+    if lvl_game == 1:
+        text_render = font.render('AMOUNT COINS:' + str(len(coin_group)), True, 'white')
+        sc.blit(text_render, (10, 10))
+    else:
+        text_render = font.render('SCORE:' + str(player.score), True, 'white')
+        sc.blit(text_render, (10, 10))
     text_render = q.render('LEVEL:' + str(lvl_game), True, 'white')
     sc.blit(text_render, (400, 10))
     pygame.display.update()
@@ -303,6 +307,7 @@ class Coin(pygame.sprite.Sprite):
         self.speedy = 0
 
     def update(self, stepx, stepy):
+        global all_score
         self.image = self.image_list[self.frame]
         self.animation()
         self.rect.x += stepx
@@ -310,7 +315,7 @@ class Coin(pygame.sprite.Sprite):
         if pygame.sprite.spritecollide(self, player_group, False):
             player.score += 10
             coin_sound.play()
-            # all_score += player.score
+            all_score += player.score
             self.kill()
 
 
@@ -805,8 +810,11 @@ class Player (pygame.sprite.Sprite):
         self.text = False
         self.winner = False
         self.go = True
+        # self.win = False
+        # self.loss = False
 
     def move(self):
+        print(lvl_game)
         if self.go:
             if self.key[pygame.K_d]:
                 self.rect.x += 7
@@ -912,7 +920,6 @@ class Player (pygame.sprite.Sprite):
             # pygame.draw.circle(sc, 'blue', (x, y), 1)
 
     def draw_stats(self):
-
         width_hp = 96 * (self.hp/100)
         # width_mp = 96 * (self.mp / 100)
         pygame.draw.rect(sc,'black', (self.rect.x - 30, self.rect.y - 52, 100,20), 2)
@@ -921,47 +928,51 @@ class Player (pygame.sprite.Sprite):
         # pygame.draw.rect(sc, 'black', (self.rect.x - 30, self.rect.y - 30, 100, 10), 2)
         # pygame.draw.rect(sc, 'blue', (self.rect.x - 27, self.rect.y - 27, width_mp, 6))
         if self.hp<1:
+            game_stats.loss = True
             game_over_sound.play()
-            self.go = False
-            self.text = True
-            self.speed = 0
+            restart()
+            game_stats.lvl = 'menu'
 
-    def fail(self):
-        if self.text:
-            text_2 = s.render('YOU LOSE!', True, 'white')
-            sc.blit(text_2, (300, 350))
-        if self.winner:
-            text_1 = s.render('YOU WINNER!', True, 'white')
-            sc.blit(text_1, (300, 350))
+
+
+    # def fail(self):
+    #     global lvl
+    #     if self.text:
+    #         text_2 = s.render('YOU LOSE!', True, 'white')
+    #         sc.blit(text_2, (300, 350))
+    #     if self.winner:
+    #         self.go = False
+    #         text_1 = s.render('YOU WINNER!', True, 'white')
+    #         sc.blit(text_1, (300, 350))
+    #         win_sound.play()
+    #         restart()
+    #         lvl = 'menu'
 
     def life(self):
         if pygame.sprite.spritecollide(self, enemy_group, False):
             life_sound.play()
             self.hp -= 0.5
     def next_level(self):
-        global lvl_game, lvl
+        global lvl_game
         if lvl_game == 1 and self.score > 27 and pygame.sprite.spritecollide(self, wizard_group, False) :
             lvl_game += 1
             level_sound.play()
             restart()
             drawMaps(str(lvl_game) + '_0.txt')
             drawMaps(str(lvl_game)+ '.txt')
-        elif lvl_game == 2 and len(enemy_boss_group) == 0:
+        elif lvl_game == 2 and len(enemy_boss_group) == 0 and not game_stats.loss:
             lvl_game += 1
             restart()
-            drawMaps('1_0.txt')
-            drawMaps('1.txt')
+            drawMaps(str(lvl_game) + '_0.txt')
+            drawMaps(str(lvl_game) + '.txt')
             level_sound.play()
         elif lvl_game == 3 and len(enemy_group) == 0:
+            # self.winner = True
+            game_stats.win = True
             win_sound.play()
-            self.winner = True
+            restart()
+            game_stats.lvl = 'menu'
 
-
-
-
-        # if lvl_game == 3 and len(enemy_group) == 0:
-        #     pygame.quit()
-        #     sys.exit()
 
     def collide_wizard(self):
         if pygame.sprite.spritecollide(self, wizard_group, False):
@@ -980,7 +991,7 @@ class Player (pygame.sprite.Sprite):
             topor_group.add(topor)
     def update(self):
         self.maska_k()
-        self.fail()
+        # self.fail()
         self.collide_wizard()
         self.key = pygame.key.get_pressed()
         self.move()
@@ -999,21 +1010,37 @@ def startMenu():
     topor_fon_group.update()
     player_fon_group.draw(sc)
     player_fon_group.update(0,0)
-    text_rend = s.render('WELCOME!', True, 'white')
-    sc.blit(text_rend, (250, 100))
+    if game_stats.loss:
+        text_rend = s.render('YOU LOSE!', True, 'white')
+        sc.blit(text_rend, (250, 100))
+    elif game_stats.win:
+        text_rend = s.render('YOU WINNER!', True, 'white')
+        sc.blit(text_rend, (250, 100))
+    elif not game_stats.loss and not game_stats.win:
+        text_rend = s.render('WELCOME!', True, 'white')
+        sc.blit(text_rend, (250, 100))
+    # text_renders = q.render('SCORE:' + str(all_score), True, 'white')
+    # sc.blit(text_renders, (500, 500))
     # text_render = font.render('SCORE:' + str(all_score), True, 'black')
     # sc.blit(text_render, (10, 10))
     pygame.display.update()
-def finishMenu():
-    sc.fill(black)
-    text_rend = s.render('YOU WON', True, 'white')
-    sc.blit(text_rend, (250, 300))
-    pygame.display.update()
-def failMenu():
-    sc.fill(black)
-    text_rend = s.render('YOU LOSE!', True, 'white')
-    sc.blit(text_rend, (250, 300))
-    pygame.display.update()
+# def finishMenu():
+#     sc.fill(black)
+#     text_rend = s.render('YOU WON', True, 'white')
+#     sc.blit(text_rend, (250, 300))
+#     pygame.display.update()
+# def failMenu():
+#     sc.fill(black)
+#     text_rend = s.render('YOU LOSE!', True, 'white')
+#     sc.blit(text_rend, (250, 300))
+#     pygame.display.update()
+
+class GameStats():
+    def __init__(self):
+        self.lvl = 'menu'
+        self.loss = False
+        self.win = False
+
 class Button (pygame.sprite.Sprite):
     def __init__(self, image, pos, next_lvl, text, create=False):
         pygame.sprite.Sprite.__init__(self)
@@ -1034,13 +1061,15 @@ class Button (pygame.sprite.Sprite):
             # self.add_enemy()
             self.add_player()
         self.time += 1
-        global lvl
+        # global lvl
         click = pygame.mouse.get_pos()
         self.animation()
         if pygame.mouse.get_pressed()[0]:
             if self.rect.left <click[0] < self.rect.right and self.rect.top < click[1] < self.rect.bottom:
                 button_sound.play()
                 self.anime = True
+            else:
+                self.anime = False
     # def add_enemy(self):
     #     global enemy_fon
     #     self.timer_spawn += 1
@@ -1060,7 +1089,7 @@ class Button (pygame.sprite.Sprite):
             self.timer_spawner = 0
 
     def animation(self):
-        global lvl
+        # global lvl
         if self.anime:
             self.image = self.image_list[self.frame]
             # print(self.frame)
@@ -1068,12 +1097,13 @@ class Button (pygame.sprite.Sprite):
             if self.timer_anime / FPS > 0.2:
                 if self.frame == len(self.image_list) - 1:
                     self.frame = 0
-                    lvl = self.next_lvl
-                    if lvl == 'game':
+                    game_stats.lvl = self.next_lvl
+                    if game_stats.lvl == 'game':
                         restart()
-                        drawMaps('1_0.txt')
-                        drawMaps('1.txt')
-                    elif lvl == 'end':
+                        drawMaps(f'{lvl_game}_0.txt')
+                        drawMaps(f'{lvl_game}.txt')
+
+                    elif game_stats.lvl == 'end':
                         pygame.quit()
                         sys.exit()
                 else:
@@ -1081,7 +1111,7 @@ class Button (pygame.sprite.Sprite):
                 self.timer_anime = 0
 
 def restart():
-    global player_group,  wizard_group,topor_fon_group, player_fon_group,enemy_group, mp_group, hp_group,enemy_boss_group,door_group,floor_group,button_group, chest_group, wall_group, camera_group, player, coin_group,key_group, topor_group, enemy_fon_group
+    global player_group,  wizard_group,topor_fon_group,game_stats, player_fon_group,enemy_group, mp_group, hp_group,enemy_boss_group,door_group,floor_group,button_group, chest_group, wall_group, camera_group, player, coin_group,key_group, topor_group, enemy_fon_group
     player_group = pygame.sprite.Group()
     topor_group = pygame.sprite.Group()
     wizard_group = pygame.sprite.Group()
@@ -1099,32 +1129,33 @@ def restart():
     coin_group = pygame.sprite.Group()
     key_group = pygame.sprite.Group()
     floor_group = pygame.sprite.Group()
+    button_start = Button(button_play_image, (600, 550), 'game', 'start', True)
+    button_group = pygame.sprite.Group()
+    button_group.add(button_start)
+    button_exit = Button(button_exit_image, (200, 550), 'end', 'exit')
+    button_group.add(button_exit)
 
-button_group = pygame.sprite.Group()
+
+restart()
 player_fon_group = pygame.sprite.Group()
 topor_fon_group = pygame.sprite.Group()
 enemy_fon_group = pygame.sprite.Group()
-button_start = Button(button_play_image, (600,550), 'game', 'start', True)
-button_group.add(button_start)
-button_exit = Button(button_exit_image, (200,550), 'end', 'exit')
-button_group.add(button_exit)
+game_stats = GameStats()
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-    if lvl == 'game':
+    if game_stats.lvl == 'game':
         game_lvl()
-    elif lvl == 'menu' :
+    elif game_stats.lvl == 'menu':
         startMenu()
     # elif player.play == False:
     #     failMenu()
-    elif lvl == 'exit':
+    elif game_stats.lvl == 'exit':
         pygame.quit()
         sys.exit()
     clock.tick(FPS)
-
-
 
 # restart()
 # drawMaps('level_1_0_last1.txt')
