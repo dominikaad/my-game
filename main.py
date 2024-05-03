@@ -814,7 +814,7 @@ class Player (pygame.sprite.Sprite):
         # self.loss = False
 
     def move(self):
-        print(lvl_game)
+        game_stats.loss = False
         if self.go:
             if self.key[pygame.K_d]:
                 self.rect.x += 7
@@ -852,6 +852,8 @@ class Player (pygame.sprite.Sprite):
                 if self.rect.top > 600:
                     self.rect.top = 600
                     camera_group.camera_move(0, -self.speed)
+            elif self.key[pygame.K_ESCAPE]:
+                game_stats.lvl = 'menu'
             else:
                 self.anime_right = False
                 self.anime_idle = True
@@ -932,6 +934,7 @@ class Player (pygame.sprite.Sprite):
             game_over_sound.play()
             restart()
             game_stats.lvl = 'menu'
+            # game_stats.loss = False
 
 
 
@@ -1034,7 +1037,25 @@ def startMenu():
 #     text_rend = s.render('YOU LOSE!', True, 'white')
 #     sc.blit(text_rend, (250, 300))
 #     pygame.display.update()
-
+def AddTopor():
+    sc.fill(black)
+    button_top_group.draw(sc)
+    button_top_group.update()
+    topor_add_group.draw(sc)
+    topor_add_group.update(0,0)
+    enemy_fon_group.draw(sc)
+    enemy_fon_group.update(0,0)
+    topor_fon_group.draw(sc)
+    topor_fon_group.update()
+    player_fon_group.draw(sc)
+    player_fon_group.update(0,0)
+    text_rend = q.render('Do you want to add topor?', True, 'white')
+    sc.blit(text_rend, (220, 100))
+    # text_renders = q.render('SCORE:' + str(all_score), True, 'white')
+    # sc.blit(text_renders, (500, 500))
+    # text_render = font.render('SCORE:' + str(all_score), True, 'black')
+    # sc.blit(text_render, (10, 10))
+    pygame.display.update()
 class GameStats():
     def __init__(self):
         self.lvl = 'menu'
@@ -1097,21 +1118,100 @@ class Button (pygame.sprite.Sprite):
             if self.timer_anime / FPS > 0.2:
                 if self.frame == len(self.image_list) - 1:
                     self.frame = 0
+                    self.anime = False
+                    self.image = self.image_list[0]
                     game_stats.lvl = self.next_lvl
                     if game_stats.lvl == 'game':
                         restart()
                         drawMaps(f'{lvl_game}_0.txt')
                         drawMaps(f'{lvl_game}.txt')
-
                     elif game_stats.lvl == 'end':
                         pygame.quit()
                         sys.exit()
+                    elif game_stats.lvl == 'add':
+                        AddTopor()
                 else:
                     self.frame += 1
                 self.timer_anime = 0
+class Button_top (pygame.sprite.Sprite):
+    def __init__(self, image, pos, create=False):
+        pygame.sprite.Sprite.__init__(self)
+        self.image_list = image
+        self.image = self.image_list[0]
+        self.rect = self.image.get_rect()
+        self.rect.topleft = pos
+        # self.next_lvl = next_lvl
+        self.time = 0
+        self.frame = 0
+        self.timer_anime = 0
+        self.anime = False
+        self.timer_spawn = 0
+        self.timer_spawner = 0
+        self.create = create
+        self.topor = 1
+        self.key = pygame.key.get_pressed()
+        self.buy = False
+    def update(self):
+        # print(self.anime)
+        if self.create:
+            # self.add_enemy()
+            self.add_player()
+        self.time += 1
+        # global lvl
+        click = pygame.mouse.get_pos()
+        self.animation()
+        if pygame.mouse.get_pressed()[0]:
+            if self.rect.left <click[0] < self.rect.right and self.rect.top < click[1] < self.rect.bottom and not self.buy:
+                self.buy = True
+                button_sound.play()
+                self.anime = True
+        self.key = pygame.key.get_pressed()
+        if self.key[pygame.K_ESCAPE]:
+            game_stats.lvl = 'menu'
 
+    def add_player(self):
+        global player_fon
+        self.timer_spawner += 1
+        if self.timer_spawner / FPS > 1 and len(player_fon_group) == 0:
+            player_fon = Player_fon(player_fon_image)
+            player_fon_group.add(player_fon)
+            enemy_fon = Enemy_fon(slime_fon_image)
+            enemy_fon.rect.x -=50
+            enemy_fon_group.add(enemy_fon)
+            self.timer_spawner = 0
+
+    def animation(self):
+        # global lvl
+        if self.anime:
+            self.image = self.image_list[self.frame]
+            # print(self.frame)
+            self.timer_anime += 1
+            if self.timer_anime / FPS > 0.2:
+                if self.frame == len(self.image_list) - 1:
+                    self.frame = 0
+                    self.topor += 1
+                    topor_add = Topor_add(topor_add_image, (self.topor * 70, 550))
+                    topor_add_group.add(topor_add)
+                    player.topor += 1
+                    self.buy = False
+                    self.anime = False
+                    self.frame = 0
+                    self.image = self.image_list[0]
+                else:
+                    self.frame += 1
+                self.timer_anime = 0
+class Topor_add (pygame.sprite.Sprite):
+    def __init__(self,image, pos):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+    def update(self, stepx, stepy):
+        self.rect.x += stepx
+        self.rect.y += stepy
 def restart():
-    global player_group,  wizard_group,topor_fon_group,game_stats, player_fon_group,enemy_group, mp_group, hp_group,enemy_boss_group,door_group,floor_group,button_group, chest_group, wall_group, camera_group, player, coin_group,key_group, topor_group, enemy_fon_group
+    global player_group,button_top_group, topor_add_group, wizard_group,topor_fon_group,game_stats, player_fon_group,enemy_group, mp_group, hp_group,enemy_boss_group,door_group,floor_group,button_group, chest_group, wall_group, camera_group, player, coin_group,key_group, topor_group, enemy_fon_group
     player_group = pygame.sprite.Group()
     topor_group = pygame.sprite.Group()
     wizard_group = pygame.sprite.Group()
@@ -1129,13 +1229,19 @@ def restart():
     coin_group = pygame.sprite.Group()
     key_group = pygame.sprite.Group()
     floor_group = pygame.sprite.Group()
-    button_start = Button(button_play_image, (600, 550), 'game', 'start', True)
+    button_start = Button(button_play_image, (700, 550), 'game', 'start', True)
     button_group = pygame.sprite.Group()
+    button_top_group = pygame.sprite.Group()
     button_group.add(button_start)
-    button_exit = Button(button_exit_image, (200, 550), 'end', 'exit')
+    button_exit = Button(button_exit_image, (100, 550), 'end', 'exit')
     button_group.add(button_exit)
-
-
+    button_add = Button(button_add_image, (400, 550), 'add', 'topory')
+    button_group.add(button_add)
+    button_top = Button_top(button_top_image, (700, 550), True)
+    button_top_group.add(button_top)
+    topor_add_group = pygame.sprite.Group()
+    topor_add = Topor_add(topor_add_image, (70, 550))
+    topor_add_group.add(topor_add)
 restart()
 player_fon_group = pygame.sprite.Group()
 topor_fon_group = pygame.sprite.Group()
@@ -1150,8 +1256,8 @@ while True:
         game_lvl()
     elif game_stats.lvl == 'menu':
         startMenu()
-    # elif player.play == False:
-    #     failMenu()
+    elif game_stats.lvl == 'add':
+        AddTopor()
     elif game_stats.lvl == 'exit':
         pygame.quit()
         sys.exit()
