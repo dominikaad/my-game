@@ -16,6 +16,7 @@ font = pygame.font.SysFont('Aria', 30)
 s = pygame.font.SysFont('Aria', 120)
 q = pygame.font.SysFont('Aria', 70)
 w = pygame.font.SysFont('Aria', 150)
+# d = pygame.font.SysFont('Aria', 50)
 sc = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 from load import *
@@ -128,6 +129,30 @@ def drawMaps(nameFile):
                 enemy_boss = Enemy_boss(slime_big1_image, pos)
                 enemy_boss_group.add(enemy_boss)
                 camera_group.add(enemy_boss)
+
+class Statistics():
+    def __init__(self):
+        self.resert_game()
+        file = open('score.txt','r')
+        self.all_score = int(file.readline())
+        self.amount_topor = int(file.readline())
+        file.close()
+
+    def resert_game(self):
+        self.all_score = 0
+        self.amount_topor = 1
+
+    def check_record(self):
+        if player.score > 0:
+            self.all_score += player.score
+            file = open('score.txt','w')
+            file.write(str(self.all_score))
+            file.close()
+        if self.amount_topor > 1:
+            player.topor += self.amount_topor
+            file = open('score.txt','w')
+            file.write(str(self.amount_topor))
+            file.close()
 
 class Wall (pygame.sprite.Sprite):
     def __init__(self,image, pos):
@@ -930,8 +955,8 @@ class Player (pygame.sprite.Sprite):
         # pygame.draw.rect(sc, 'black', (self.rect.x - 30, self.rect.y - 30, 100, 10), 2)
         # pygame.draw.rect(sc, 'blue', (self.rect.x - 27, self.rect.y - 27, width_mp, 6))
         if self.hp<1:
-            game_stats.loss = True
             game_over_sound.play()
+            game_stats.loss = True
             restart()
             game_stats.lvl = 'menu'
             # game_stats.loss = False
@@ -1051,8 +1076,8 @@ def AddTopor():
     player_fon_group.update(0,0)
     text_rend = q.render('Do you want to add topor?', True, 'white')
     sc.blit(text_rend, (220, 100))
-    # text_renders = q.render('SCORE:' + str(all_score), True, 'white')
-    # sc.blit(text_renders, (500, 500))
+    text_renders = q.render('SCORE:' + str(all_score), True, 'white')
+    sc.blit(text_renders, (400, 700))
     # text_render = font.render('SCORE:' + str(all_score), True, 'black')
     # sc.blit(text_render, (10, 10))
     pygame.display.update()
