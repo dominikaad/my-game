@@ -132,28 +132,38 @@ def drawMaps(nameFile):
 
 class Statistics():
     def __init__(self):
-        self.resert_game()
-        file = open('score.txt','r')
-        self.all_score = int(file.readline())
-        self.amount_topor = int(file.readline())
-        file.close()
-
-    def resert_game(self):
         self.all_score = 0
-        self.amount_topor = 1
+        self.all_topor = 1
+        with open('score.txt','r') as file:
+            text = file.readline().split()
+            self.all_score = int(text[0])
+            self.all_topor = int(text[1])
+            #game_stats.amount_topor = int(file.readline())
 
+    def save_stats(self):
+        self.all_score = player.score
+        self.all_topor = player.topor
+        with open('score.txt', 'w') as file:
+            texts = f'{self.all_score} {self.all_topor}'
+            file.write(texts)
     def check_record(self):
-        if player.score > 0:
+        global button_top
+        if button_top.buy:
+            self.all_score -= 1000
+        if game_stats.loss or game_stats.exit or game_stats.win or game_stats.new_level:
             self.all_score += player.score
-            file = open('score.txt','w')
-            file.write(str(self.all_score))
-            file.close()
-        if self.amount_topor > 1:
-            player.topor += self.amount_topor
-            file = open('score.txt','w')
-            file.write(str(self.amount_topor))
-            file.close()
-
+            # # # file = open('score.txt','w')
+            # # # file.write(str(self.all_score))
+            # self.all_topor += player.topor
+            # # # file = open('score.txt','w')
+            # # # file.write(str(game_stats.amount_topor))
+            with open('score.txt', 'w') as file:
+                texts = f'{self.all_score} {self.all_topor}'
+                file.write(texts)
+        # else:
+        #     self.all_score = 0
+        #     self.all_topor = 1
+        # file.close()
 class Wall (pygame.sprite.Sprite):
     def __init__(self,image, pos):
         pygame.sprite.Sprite.__init__(self)
@@ -340,7 +350,7 @@ class Coin(pygame.sprite.Sprite):
         if pygame.sprite.spritecollide(self, player_group, False):
             player.score += 10
             coin_sound.play()
-            all_score += player.score
+            statistics.all_score = player.score
             self.kill()
 
 
@@ -821,9 +831,9 @@ class Player (pygame.sprite.Sprite):
         self.dir = 'right'
         self.hp = 100
         # self.mp = 100
-        self.score = 0
+        self.score = statistics.all_score
         self.speed = 7
-        self.topor = 1
+        self.topor = statistics.all_topor
         self.mask = pygame.mask.from_surface(self.image)
         self.mask_outline = self.mask.outline()
         self.mask_list = []
@@ -878,7 +888,9 @@ class Player (pygame.sprite.Sprite):
                     self.rect.top = 600
                     camera_group.camera_move(0, -self.speed)
             elif self.key[pygame.K_ESCAPE]:
+                game_stats.exit = True
                 game_stats.lvl = 'menu'
+                statistics.save_stats()
             else:
                 self.anime_right = False
                 self.anime_idle = True
@@ -983,12 +995,14 @@ class Player (pygame.sprite.Sprite):
     def next_level(self):
         global lvl_game
         if lvl_game == 1 and self.score > 27 and pygame.sprite.spritecollide(self, wizard_group, False) :
+            game_stats.new_level = True
             lvl_game += 1
             level_sound.play()
             restart()
             drawMaps(str(lvl_game) + '_0.txt')
             drawMaps(str(lvl_game)+ '.txt')
         elif lvl_game == 2 and len(enemy_boss_group) == 0 and not game_stats.loss:
+            game_stats.new_level = True
             lvl_game += 1
             restart()
             drawMaps(str(lvl_game) + '_0.txt')
@@ -1076,8 +1090,14 @@ def AddTopor():
     player_fon_group.update(0,0)
     text_rend = q.render('Do you want to add topor?', True, 'white')
     sc.blit(text_rend, (220, 100))
-    text_renders = q.render('SCORE:' + str(all_score), True, 'white')
+    text_renders = q.render('SCORE:' + str(player.score), True, 'white')
     sc.blit(text_renders, (400, 700))
+    if statistics.all_score < 1000:
+        text_rende = font.render('Value: 1000', True, 'red')
+        sc.blit(text_rende, (50, 500))
+    elif statistics.all_score > 1000:
+        text_rende = font.render('Value: 1000', True, 'white')
+        sc.blit(text_rende, (50, 500))
     # text_render = font.render('SCORE:' + str(all_score), True, 'black')
     # sc.blit(text_render, (10, 10))
     pygame.display.update()
@@ -1086,6 +1106,11 @@ class GameStats():
         self.lvl = 'menu'
         self.loss = False
         self.win = False
+        self.exit = False
+        self.amount_topor = 1
+        self.new_level = False
+
+
 
 class Button (pygame.sprite.Sprite):
     def __init__(self, image, pos, next_lvl, text, create=False):
@@ -1186,7 +1211,7 @@ class Button_top (pygame.sprite.Sprite):
         click = pygame.mouse.get_pos()
         self.animation()
         if pygame.mouse.get_pressed()[0]:
-            if self.rect.left <click[0] < self.rect.right and self.rect.top < click[1] < self.rect.bottom and not self.buy:
+            if self.rect.left <click[0] < self.rect.right and self.rect.top < click[1] < self.rect.bottom and statistics.all_score > 1000 and not self.buy:
                 self.buy = True
                 button_sound.play()
                 self.anime = True
@@ -1217,7 +1242,17 @@ class Button_top (pygame.sprite.Sprite):
                     self.topor += 1
                     topor_add = Topor_add(topor_add_image, (self.topor * 70, 550))
                     topor_add_group.add(topor_add)
-                    player.topor += 1
+                    with open('score.txt', 'r') as file:
+                        text = file.readline().split()
+                        all_score = int(text[0])
+                        all_topor = int(text[1])
+                    all_score -= 1000
+                    player.score -= 1000
+                    all_topor += 1
+                    with open('score.txt', 'w') as file:
+                        texts = f'{all_score} {all_topor}'
+                        file.write(texts)
+
                     self.buy = False
                     self.anime = False
                     self.frame = 0
@@ -1237,6 +1272,7 @@ class Topor_add (pygame.sprite.Sprite):
         self.rect.y += stepy
 def restart():
     global player_group,button_top_group, topor_add_group, wizard_group,topor_fon_group,game_stats, player_fon_group,enemy_group, mp_group, hp_group,enemy_boss_group,door_group,floor_group,button_group, chest_group, wall_group, camera_group, player, coin_group,key_group, topor_group, enemy_fon_group
+    global  statistics
     player_group = pygame.sprite.Group()
     topor_group = pygame.sprite.Group()
     wizard_group = pygame.sprite.Group()
@@ -1248,6 +1284,7 @@ def restart():
     wall_group = pygame.sprite.Group()
     camera_group = SUPER_GROUP()
     enemy_boss_group = pygame.sprite.Group()
+    statistics = Statistics()
     player = Player({'idle': player_image_idle, 'right': player_image_right,'left': player_image_left,
                                               'forward': player_image_forward, 'up': player_image_up}, (200, 200))
     player_group.add(player)
@@ -1272,6 +1309,7 @@ player_fon_group = pygame.sprite.Group()
 topor_fon_group = pygame.sprite.Group()
 enemy_fon_group = pygame.sprite.Group()
 game_stats = GameStats()
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
