@@ -146,6 +146,7 @@ class Statistics():
         with open('score.txt', 'w') as file:
             texts = f'{self.all_score} {self.all_topor}'
             file.write(texts)
+
     def check_record(self):
         global button_top
         if button_top.buy:
@@ -995,6 +996,7 @@ class Player (pygame.sprite.Sprite):
     def next_level(self):
         global lvl_game
         if lvl_game == 1 and self.score > 27 and pygame.sprite.spritecollide(self, wizard_group, False) :
+            statistics.save_stats()
             game_stats.new_level = True
             lvl_game += 1
             level_sound.play()
@@ -1002,6 +1004,7 @@ class Player (pygame.sprite.Sprite):
             drawMaps(str(lvl_game) + '_0.txt')
             drawMaps(str(lvl_game)+ '.txt')
         elif lvl_game == 2 and len(enemy_boss_group) == 0 and not game_stats.loss:
+            statistics.save_stats()
             game_stats.new_level = True
             lvl_game += 1
             restart()
@@ -1009,6 +1012,7 @@ class Player (pygame.sprite.Sprite):
             drawMaps(str(lvl_game) + '.txt')
             level_sound.play()
         elif lvl_game == 3 and len(enemy_group) == 0:
+            statistics.save_stats()
             # self.winner = True
             game_stats.win = True
             win_sound.play()
