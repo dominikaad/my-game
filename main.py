@@ -151,6 +151,7 @@ class Statistics():
         global button_top
         if button_top.buy:
             self.all_score -= 1000
+            # self.save_stats()
         if game_stats.loss or game_stats.exit or game_stats.win or game_stats.new_level:
             self.all_score += player.score
             # # # file = open('score.txt','w')
@@ -995,7 +996,7 @@ class Player (pygame.sprite.Sprite):
             self.hp -= 0.5
     def next_level(self):
         global lvl_game
-        if lvl_game == 1 and self.score > 27 and pygame.sprite.spritecollide(self, wizard_group, False) :
+        if lvl_game == 1 and self.score > 2739 and pygame.sprite.spritecollide(self, wizard_group, False) :
             statistics.save_stats()
             game_stats.new_level = True
             lvl_game += 1
@@ -1114,8 +1115,6 @@ class GameStats():
         self.amount_topor = 1
         self.new_level = False
 
-
-
 class Button (pygame.sprite.Sprite):
     def __init__(self, image, pos, next_lvl, text, create=False):
         pygame.sprite.Sprite.__init__(self)
@@ -1132,6 +1131,7 @@ class Button (pygame.sprite.Sprite):
         self.timer_spawner = 0
         self.create = create
     def update(self):
+
         if self.create:
             # self.add_enemy()
             self.add_player()
@@ -1183,6 +1183,14 @@ class Button (pygame.sprite.Sprite):
                         pygame.quit()
                         sys.exit()
                     elif game_stats.lvl == 'add':
+                        with open('score.txt', 'r') as file:
+                            text = file.readline().split()
+                            all_score = int(text[0])
+                            all_topor = int(text[1])
+                        for i in range(all_topor):
+                            topor_add = Topor_add(topor_add_image, (70*i, 550))
+                            topor_add_group.add(topor_add)
+
                         AddTopor()
                 else:
                     self.frame += 1
@@ -1206,6 +1214,7 @@ class Button_top (pygame.sprite.Sprite):
         self.key = pygame.key.get_pressed()
         self.buy = False
     def update(self):
+
         # print(self.anime)
         if self.create:
             # self.add_enemy()
@@ -1244,6 +1253,7 @@ class Button_top (pygame.sprite.Sprite):
                 if self.frame == len(self.image_list) - 1:
                     self.frame = 0
                     self.topor += 1
+                    # self.image = self.image_list[0]
                     topor_add = Topor_add(topor_add_image, (self.topor * 70, 550))
                     topor_add_group.add(topor_add)
                     with open('score.txt', 'r') as file:
@@ -1253,10 +1263,11 @@ class Button_top (pygame.sprite.Sprite):
                     all_score -= 1000
                     player.score -= 1000
                     all_topor += 1
+
+                    # statistics.save_stats()
                     with open('score.txt', 'w') as file:
                         texts = f'{all_score} {all_topor}'
                         file.write(texts)
-
                     self.buy = False
                     self.anime = False
                     self.frame = 0
@@ -1306,8 +1317,7 @@ def restart():
     button_top = Button_top(button_top_image, (700, 550), True)
     button_top_group.add(button_top)
     topor_add_group = pygame.sprite.Group()
-    topor_add = Topor_add(topor_add_image, (70, 550))
-    topor_add_group.add(topor_add)
+
 restart()
 player_fon_group = pygame.sprite.Group()
 topor_fon_group = pygame.sprite.Group()
